@@ -1,0 +1,6 @@
+numpy
+scipy
+soundfile
+tqdm
+torch==2.7.0
+torchaudio
