@@ -212,4 +212,4 @@ if __name__ == "__main__":
     start_time = time.time()
     extract_ambience(input_stereo, fs=fs, output_path=args.output_path)
     print("Elapsed time: {:.2f} seconds".format(time.time() - start_time))
-    # 6m38s takes 2.63s
+    # 1s takes 0.02s

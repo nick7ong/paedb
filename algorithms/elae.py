@@ -195,10 +195,12 @@ if __name__ == "__main__":
 
     input_stereo, fs = sf.read(args.input)
 
+    input_stereo = input_stereo[:44100, :]
+
     window_size = 1024
     overlap = window_size // 2
 
     start_time = time.time()
     extract_ambience(input_stereo, window_size, overlap, fs, args.output_path)
     print("Elapsed time: {:.2f} seconds".format(time.time() - start_time))
-    # 6m38s takes 66.09s
+    # 1s takes 0.2s
