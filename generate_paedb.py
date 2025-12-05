@@ -73,8 +73,8 @@ def process(wav_path, split_name, output_root):
 
     extract_ambience(
         input_stereo=input_stereo,
-        window_size=1024,
-        overlap=2,
+        stft_window_size=1024,
+        stft_overlap=1024//2,
         fs=fs,
         output_path=output_dir,
     )

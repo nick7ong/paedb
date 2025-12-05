@@ -160,21 +160,21 @@ def decorrelate_stereo_signal(stereo_input, fs, window, nperseg, noverlap, lambd
     return ambience_left, ambience_right
 
 
-def extract_ambience(input_stereo, window_size=1024, overlap=2, fs=44100, output_path="."):
+def extract_ambience(input_stereo, stft_window_size=128, stft_overlap=96, fs=44100, output_path="."):
     left_data, center_data, right_data = center_channel_decomposition(
         stereo_input=input_stereo,
         fs=fs,
         window='hann',
-        nperseg=window_size,
-        noverlap=window_size // overlap
+        nperseg=stft_window_size,
+        noverlap=stft_overlap
     )
     decomp_signal = np.column_stack((left_data, right_data))
     ambience_left, ambience_right = decorrelate_stereo_signal(
         stereo_input=decomp_signal,
         fs=fs,
         window='hann',
-        nperseg=window_size,
-        noverlap=window_size // overlap,
+        nperseg=stft_window_size,
+        noverlap=stft_overlap,
         lambda_val=0.7
     )
     ambient_data = np.column_stack((ambience_left, ambience_right))
