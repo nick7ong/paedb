@@ -1,7 +1,6 @@
 import os
 import torch
 import torchaudio
-import torchaudio.functional as AF
 
 
 # ----------------------------
