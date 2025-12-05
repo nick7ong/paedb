@@ -94,6 +94,30 @@ def center_channel_decomposition(stereo_input, fs, window, nperseg, noverlap):
     return left_out, center_out, right_out
 
 
+# Calculate auto-correlation and cross-correlation
+def auto_correlation(signal, forgetting_factor=0.5):
+    num_frequency_bins, num_time_frames = signal.shape
+    result = np.zeros((num_frequency_bins, num_time_frames), dtype='complex')
+    for freq_bin in range(num_frequency_bins):
+        for time_frame in range(num_time_frames):
+            last_value = result[freq_bin, time_frame - 1] if time_frame > 0 else 0
+            current_value = np.power(np.abs(signal[freq_bin, time_frame]), 2)
+            result[freq_bin, time_frame] = (forgetting_factor * last_value) + (
+                    (1 - forgetting_factor) * current_value)
+    return result
+
+def cross_correlation(signal_1, signal_2, forgetting_factor=0.5):
+    num_frequency_bins, num_time_frames = signal_1.shape
+    result = np.zeros((num_frequency_bins, num_time_frames), dtype='complex')
+    for freq_bin in range(num_frequency_bins):
+        for time_frame in range(num_time_frames):
+            last_value = result[freq_bin, time_frame - 1] if time_frame > 0 else 0
+            current_value = signal_1[freq_bin, time_frame] * np.conj(signal_2[freq_bin, time_frame])
+            result[freq_bin, time_frame] = (forgetting_factor * last_value) + (
+                    (1 - forgetting_factor) * current_value)
+    return result
+
+
 def decorrelate_stereo_signal(stereo_input, fs, window, nperseg, noverlap, lambda_val):
     """
     Correlation-Based Ambience Extraction Algorithm
@@ -110,29 +134,6 @@ def decorrelate_stereo_signal(stereo_input, fs, window, nperseg, noverlap, lambd
     # Perform STFT on both channels
     f, t, stft_left = stft(stereo_left, fs, window=window, nperseg=nperseg, noverlap=noverlap)
     _, _, stft_right = stft(stereo_right, fs, window=window, nperseg=nperseg, noverlap=noverlap)
-
-    num_frequency_bins, num_time_frames = stft_left.shape
-
-    # Calculate auto-correlation and cross-correlation
-    def auto_correlation(signal, forgetting_factor=0.5):
-        result = np.zeros((num_frequency_bins, num_time_frames), dtype='complex')
-        for freq_bin in range(num_frequency_bins):
-            for time_frame in range(num_time_frames):
-                last_value = result[freq_bin, time_frame - 1] if time_frame > 0 else 0
-                current_value = np.power(np.abs(signal[freq_bin, time_frame]), 2)
-                result[freq_bin, time_frame] = (forgetting_factor * last_value) + (
-                        (1 - forgetting_factor) * current_value)
-        return result
-
-    def cross_correlation(signal_1, signal_2, forgetting_factor=0.5):
-        result = np.zeros((num_frequency_bins, num_time_frames), dtype='complex')
-        for freq_bin in range(num_frequency_bins):
-            for time_frame in range(num_time_frames):
-                last_value = result[freq_bin, time_frame - 1] if time_frame > 0 else 0
-                current_value = signal_1[freq_bin, time_frame] * np.conj(signal_2[freq_bin, time_frame])
-                result[freq_bin, time_frame] = (forgetting_factor * last_value) + (
-                        (1 - forgetting_factor) * current_value)
-        return result
 
     autocorr_left = auto_correlation(stft_left, forgetting_factor=lambda_val)
     autocorr_right = auto_correlation(stft_right, forgetting_factor=lambda_val)
@@ -189,13 +190,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', type=str, required=True)
-    parser.add_argument('--output_path', type=str, required=True)
+    parser.add_argument('--output_path', default=".", type=str, required=False)
     args = parser.parse_args()
 
-    start_time = time.time()
     input_stereo, fs = sf.read(args.input)
 
     window_size = 1024
-    overlap = 2
+    overlap = window_size // 2
+
+    start_time = time.time()
     extract_ambience(input_stereo, window_size, overlap, fs, args.output_path)
     print("Elapsed time: {:.2f} seconds".format(time.time() - start_time))
+    # 6m38s takes 66.09s
