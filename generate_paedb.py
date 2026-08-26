@@ -5,11 +5,12 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+import torchaudio as ta
 import soundfile as sf
 from tqdm import tqdm
 
-from algorithms.elae import extract_ambience
-
+from algorithms.elae import extract_ambience as numpy_elae
+from algorithms.torch_elae import extract_ambience as torch_elae
 
 def collect_wav_files(dirs):
     wav_paths = []
@@ -63,21 +64,35 @@ def split_dataset(wav_files, ratios, seed=42):
     }
 
 
-def process(wav_path, split_name, output_root):
+def process(wav_path, split_name, output_root, algorithm_type):
     """Worker function executed by each thread."""
     output_dir = build_output_path(wav_path, output_root, split_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    input_stereo, fs = sf.read(wav_path)
-    sf.write(os.path.join(output_dir, "mixture.wav"), input_stereo, fs)
+    if algorithm_type == "torch_elae":
+        input_stereo, fs = ta.load(wav_path, channels_first=False)
+        ta.save(os.path.join(output_dir, "mixture.wav"), input_stereo, fs, channels_first=False)
 
-    extract_ambience(
-        input_stereo=input_stereo,
-        stft_window_size=1024,
-        stft_overlap=1024//2,
-        fs=fs,
-        output_path=output_dir,
-    )
+        torch_elae(
+            input_stereo,
+            window_size=1024,
+            overlap=1024//2,
+            fs=fs,
+            output_path=output_dir
+        )
+    elif algorithm_type == "numpy_elae":
+        input_stereo, fs = sf.read(wav_path)
+        sf.write(os.path.join(output_dir, "mixture.wav"), input_stereo, fs)
+
+        numpy_elae(
+            input_stereo=input_stereo,
+            stft_window_size=1024,
+            stft_overlap=1024//2,
+            fs=fs,
+            output_path=output_dir,
+        )
+    else:
+        raise NotImplementedError(f"Unknown algorithm type: {algorithm_type}")
 
     return wav_path
 
@@ -110,7 +125,7 @@ def main(dirs, output_root, pae_type, ratios, max_workers=4):
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
-                executor.submit(process, wav_path, split_name, output_root)
+                executor.submit(process, wav_path, split_name, output_root, pae_type)
                 for wav_path in paths
             ]
 
@@ -124,10 +139,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate PAE dataset")
     parser.add_argument("--dirs", nargs="+", required=True, help="List of directories to WAV files.")
     parser.add_argument("--output", type=str, default="dataset/paedb", help="Output directory.")
-    parser.add_argument("--type", type=str, default="elae", help="PAE algorithm type.")
-    parser.add_argument("--split-ratios", nargs=3, type=float, default=[0.9, 0.1, 0.0],
-                        help="Ratios for train valid test (must sum to 1).")
-    parser.add_argument("--workers", type=int, default=4, help="Number of parallel worker threads.")
+    parser.add_argument("--type", type=str, default="torch_elae", choices=["torch_elae", "numpy_elae"], help="PAE algorithm type.")
+    parser.add_argument("--split-ratios", nargs=3, type=float, default=[0.9, 0.1, 0.0], help="Ratios for train valid test (must sum to 1).")
+    parser.add_argument("--workers", type=int, default=1, help="Number of parallel worker threads.")
 
     args = parser.parse_args()
 
