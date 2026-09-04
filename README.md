@@ -64,11 +64,12 @@ output_root/
 ## Citation (*Placeholder*)
 
 ```bibtex
-@misc{tong2026paedb,
-  author       = {Nicholas N Tong},
-  title        = {PAEDB: Primary-Ambient Extraction Dataset},
+@inproceedings{tong2026paedb,
+  title        = {{PAEDB}: A Synthetic Primary-Ambient Dataset Generation Pipeline for Automatic Upmixing Using Deep Neural Networks},
+  author       = {Tong, Nicholas N. and Collins, Tom},
+  booktitle    = {Proceedings of the 29th International Conference on Digital Audio Effects (DAFx26)},
   year         = {2026},
-  howpublished = {\url{https://github.com/nick7ong/paedb}}
+  address      = {Cambridge, MA, USA},
 }
 ```
 
