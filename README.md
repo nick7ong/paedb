@@ -1,6 +1,9 @@
 # PAEDB Dataset Generation Scripts
 
-This repository contains code for generating the Primary-Ambient Extraction Dataset (PAEDB), including:
+This repository contains code for generating the Primary-Ambient Extraction Dataset (PAEDB).
+
+### To-Dos:
+- Add audio examples
 
 ---
 
